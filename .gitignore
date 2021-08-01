@@ -19,5 +19,34 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+*.iml
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.idea/
+app/keys/*
+app/dev/*
+app/prod/*
+app/staging/*
+/app/keys/*
+/app/dev/*
+/app/prod/*
+/app/staging/*
