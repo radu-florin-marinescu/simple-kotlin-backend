@@ -2,7 +2,7 @@ buildscript {
     repositories {
         jcenter()
     }
-    
+
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -26,6 +26,11 @@ repositories {
     mavenLocal()
     jcenter()
     maven { url 'https://kotlin.bintray.com/ktor' }
+    maven {
+        url 'https://maven.pkg.jetbrains.space/public/p/ktor/eap'
+        name 'ktor-eap'
+    }
+    mavenCentral()
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -40,22 +45,26 @@ compileTestKotlin {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "io.ktor:ktor-server-jetty:$ktor_version"
     implementation "ch.qos.logback:logback-classic:$logback_version"
-    implementation "io.ktor:ktor-server-core:$ktor_version"
-    implementation "io.ktor:ktor-jackson:$ktor_version"
-    implementation "io.ktor:ktor-client-core:$ktor_version"
-    implementation "io.ktor:ktor-client-core-jvm:$ktor_version"
-    implementation "io.ktor:ktor-client-jetty:$ktor_version"
-    implementation "io.ktor:ktor-client-logging-jvm:$ktor_version"
 
-    implementation 'org.litote.kmongo:kmongo:4.2.8'
-    implementation 'org.litote.kmongo:kmongo-coroutine:4.2.8'
+    implementation 'org.litote.kmongo:kmongo:4.5.1'
+    implementation 'org.litote.kmongo:kmongo-coroutine:4.5.1'
 
-    implementation "io.insert-koin:koin-core:3.1.2"
-    implementation "io.insert-koin:koin-ktor:3.1.2"
-    testImplementation "io.insert-koin:koin-test:3.1.2"
+    implementation "io.insert-koin:koin-core:$koin_version"
+    implementation "io.insert-koin:koin-ktor:$koin_version"
 
+    implementation 'io.ktor:ktor-server-jetty-jvm:2.0.1'
+    implementation 'io.ktor:ktor-serialization-jackson:2.0.1'
+    implementation 'io.ktor:ktor-server-core-jvm:2.0.1'
+    implementation 'io.ktor:ktor-server-content-negotiation-jvm:2.0.1'
+    implementation 'io.ktor:ktor-client-jetty-jvm:2.0.1'
+    implementation 'io.ktor:ktor-server-data-conversion:2.0.1'
+    implementation 'io.ktor:ktor-server-default-headers:2.0.1'
+    implementation 'io.ktor:ktor-server-call-logging:2.0.1'
+    implementation 'io.ktor:ktor-server-content-negotiation:2.0.1'
+    implementation 'io.ktor:ktor-client-core-jvm:2.0.1'
+    implementation 'io.ktor:ktor-client-logging-jvm:2.0.1'
 
-    testImplementation "io.ktor:ktor-server-tests:$ktor_version"
+    testImplementation "io.insert-koin:koin-test:$koin_version"
+    testImplementation 'io.ktor:ktor-server-tests-jvm:2.0.1'
 }

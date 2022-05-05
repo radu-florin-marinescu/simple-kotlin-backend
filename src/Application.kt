@@ -7,12 +7,15 @@ import com.radumarinescu.Constants.DATABASE_URL
 import components.messages.MessageRepository
 import components.messages.MessageRepositoryImpl
 import components.messages.messageRoutes
-import io.ktor.application.*
-import io.ktor.features.*
-import io.ktor.jackson.*
-import io.ktor.routing.*
+import io.ktor.serialization.jackson.*
+import io.ktor.server.application.*
+import io.ktor.server.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.jetty.*
+import io.ktor.server.plugins.callloging.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.dataconversion.*
+import io.ktor.server.plugins.defaultheaders.*
 import org.bson.UuidRepresentation
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
@@ -40,6 +43,7 @@ fun main(args: Array<String>) {
     embeddedServer(Jetty, commandLineEnvironment(args)).start()
 }
 
+@Suppress("unused")
 fun Application.module() {
     install(DefaultHeaders)
     install(CallLogging)

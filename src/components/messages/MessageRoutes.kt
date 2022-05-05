@@ -1,17 +1,16 @@
 package components.messages
 
-import io.ktor.application.*
+import io.ktor.server.application.*
 import io.ktor.http.*
-import io.ktor.request.*
-import io.ktor.response.*
-import io.ktor.routing.*
-import io.ktor.util.pipeline.*
-import org.koin.ktor.ext.inject
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import org.koin.java.KoinJavaComponent.inject
 import java.util.*
 
 fun Route.messageRoutes() {
 
-    val repository by inject<MessageRepository>()
+    val repository by inject<MessageRepository>(MessageRepository::class.java)
 
     route("/message") {
 
