@@ -35,6 +35,25 @@ class MessageRepositoryImpl : KoinComponent, MessageRepository {
                 .toList()
         }
 
+    override suspend fun fetchPaginated(offset: Int, number: Int) =
+        withContext(Dispatchers.IO) {
+            client
+                .getDatabase(DB_NAME)
+                .getCollection<Message>(COLLECTION_NAME_MESSAGES)
+                .find()
+                .skip(offset)
+                .limit(number)
+                .toList()
+        }
+
+    override suspend fun fetchCount() =
+        withContext(Dispatchers.IO) {
+            client
+                .getDatabase(DB_NAME)
+                .getCollection<Message>(COLLECTION_NAME_MESSAGES)
+                .countDocuments()
+        }
+
     override suspend fun fetch(id: UUID): Message? =
         withContext(Dispatchers.IO) {
             client

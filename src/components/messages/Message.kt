@@ -6,4 +6,3 @@ data class Message(
     val id: UUID?,
     val text: String
 )
-
