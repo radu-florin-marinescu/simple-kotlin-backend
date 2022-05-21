@@ -2,19 +2,20 @@ package com.radumarinescu.components.users
 
 import com.radumarinescu.bearerAuthentication
 import com.radumarinescu.components.UserDetailsResponse
-import com.radumarinescu.components.addresses.Address
-import com.radumarinescu.components.addresses.AddressResponse
 import com.radumarinescu.components.common.GlobalResponse
 import com.radumarinescu.encryptPassword
 import com.radumarinescu.generateToken
+import com.radumarinescu.onAuthenticate
 import io.ktor.server.application.*
 import io.ktor.http.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.*
+import kotlinx.coroutines.delay
 import org.koin.java.KoinJavaComponent.inject
-import org.litote.kmongo.MongoOperator
+import java.lang.IllegalArgumentException
 import java.util.*
 
 fun Route.userRoutes() {
@@ -84,6 +85,7 @@ fun Route.userRoutes() {
                 get {
                     call.bearerAuthentication()
                     call.principal<User>()?.let {
+                        delay(5000)
                         println(it.email)
                     }
                     call.respond(
@@ -97,53 +99,67 @@ fun Route.userRoutes() {
         }
     }
 
+    route("/me") {
+        authenticate {
+            get {
+                onAuthenticate { call, userId ->
+                    val fullUser = repository.fetchUser(userId) ?: return@onAuthenticate
+                    val addresses = repository.fetchAddressesForUser(userId)
+
+                    val response = GlobalResponse(
+                        success = true,
+                        data = UserDetailsResponse(
+                            user = UserResponse(
+                                email = fullUser.email,
+                                age = fullUser.age,
+                                name = fullUser.name
+                            ),
+                            addresses = addresses.data ?: emptyList(),
+                            orderCount = 0
+                        )
+                    )
+                    call.respond(HttpStatusCode.OK, response)
+                }
+            }
+        }
+    }
+
     route("/address") {
         authenticate {
             get {
-                call.bearerAuthentication()
-                call.principal<User>()?.let { user ->
-                    val result = repository.fetchAddressesForUser(user.id ?: return@get)
+                onAuthenticate { call, userId ->
+                    val result = repository.fetchAddressesForUser(userId)
                     call.respond(HttpStatusCode.OK, result)
                 }
             }
 
             put {
-                call.bearerAuthentication()
-                call.principal<User>()?.let { user ->
+                onAuthenticate { call, userId ->
                     val address = call.receive<Address>()
-                    address.userId = user.id ?: return@put
-                    val result = repository.insertAddressForUser(address)
-                    call.respond(HttpStatusCode.OK, result)
+
+                    if (address.id == null) {
+                        val result = repository.insertAddressForUser(userId, address)
+                        call.respond(HttpStatusCode.OK, result)
+                    } else {
+                        val result = repository.updateAddressForUser(userId, address)
+                        call.respond(HttpStatusCode.OK, result)
+                    }
                 }
             }
-        }
 
-        route("/me") {
-            authenticate {
-                get {
-                    call.bearerAuthentication()
-                    call.principal<User>()?.let { user ->
-                        val fullUser = repository.fetchUser(user.id) ?: return@get
-                        val addresses = repository.fetchAddressesForUser(user.id)
-
-                        val response = GlobalResponse<UserDetailsResponse>(
-                            success = true,
-                            data = UserDetailsResponse(
-                                user = UserResponse(
-                                    email = fullUser.email,
-                                    age = fullUser.age,
-                                    name = fullUser.name
-                                ),
-                                addresses = addresses.data.map { address ->
-                                    AddressResponse(
-
-                                    )
-                                }
-                            )
-                        )
+            delete {
+                onAuthenticate { call, userId ->
+                    val queryParam = call.request.queryParameters.getOrFail("id")
+                    try {
+                        val result = repository.deleteAddressForUser(userId, UUID.fromString(queryParam))
                         call.respond(HttpStatusCode.OK, result)
+                    } catch (e: Exception){
+                        if( e is IllegalArgumentException){
+                            call.respond(HttpStatusCode.BadRequest, "Id is invalid")
+                        }
                     }
                 }
             }
         }
     }
+}

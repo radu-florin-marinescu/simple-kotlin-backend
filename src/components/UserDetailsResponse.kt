@@ -1,6 +1,6 @@
 package com.radumarinescu.components
 
-import com.radumarinescu.components.addresses.Address
+import com.radumarinescu.components.users.Address
 import com.radumarinescu.components.users.UserResponse
 
 data class UserDetailsResponse(

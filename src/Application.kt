@@ -6,15 +6,21 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings
+import com.mongodb.internal.Timeout
 import com.radumarinescu.Constants.DATABASE_URL
 import com.radumarinescu.Constants.JWT_EMAIL
 import com.radumarinescu.components.common.GlobalResponse
+import com.radumarinescu.components.dashdoard.DashboardRepository
+import com.radumarinescu.components.dashdoard.DashboardRepositoryImpl
+import com.radumarinescu.components.dashdoard.dashboardRoutes
 import com.radumarinescu.components.users.UserRepository
 import com.radumarinescu.components.users.UserRepositoryImpl
 import com.radumarinescu.components.users.userRoutes
 import components.messages.MessageRepository
 import components.messages.MessageRepositoryImpl
 import components.messages.messageRoutes
+import io.ktor.client.*
+import io.ktor.client.plugins.*
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
 import io.ktor.server.application.*
@@ -26,6 +32,7 @@ import io.ktor.server.jetty.*
 import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.dataconversion.*
+import io.ktor.server.plugins.dataconversion.DataConversion
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
@@ -47,6 +54,7 @@ fun main(args: Array<String>) {
         modules(module {
             single<MessageRepository> { MessageRepositoryImpl() }
             single<UserRepository> { UserRepositoryImpl(get()) }
+            single<DashboardRepository> { DashboardRepositoryImpl(get()) }
             single {
                 KMongo
                     .createClient(
@@ -59,7 +67,6 @@ fun main(args: Array<String>) {
                     .coroutine
             }
         })
-
     }
     embeddedServer(Jetty, commandLineEnvironment(args)).start()
 }
@@ -72,6 +79,11 @@ fun Application.module() {
     install(ContentNegotiation) {
         jackson {
             enable(SerializationFeature.INDENT_OUTPUT)
+        }
+    }
+    HttpClient(io.ktor.client.engine.jetty.Jetty) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 3000
         }
     }
     install(StatusPages) {
@@ -121,5 +133,6 @@ fun Application.module() {
     routing {
         userRoutes()
         messageRoutes()
+        dashboardRoutes()
     }
 }
