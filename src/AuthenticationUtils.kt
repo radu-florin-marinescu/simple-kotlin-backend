@@ -4,7 +4,6 @@ import com.auth0.jwt.JWT
 import com.radumarinescu.Constants.JWT_EMAIL
 import com.radumarinescu.Constants.JWT_SCOPE
 import com.radumarinescu.components.users.LoginRequest
-import com.radumarinescu.components.users.User
 import io.ktor.http.auth.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
