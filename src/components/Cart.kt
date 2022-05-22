@@ -1,5 +1,6 @@
 package com.radumarinescu.components
 
+import com.radumarinescu.components.couriers.Courier
 import java.util.*
 
 data class Cart(

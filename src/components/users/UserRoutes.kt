@@ -14,9 +14,12 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
 import kotlinx.coroutines.delay
+import org.apache.commons.mail.DefaultAuthenticator
+import org.apache.commons.mail.SimpleEmail
 import org.koin.java.KoinJavaComponent.inject
 import java.lang.IllegalArgumentException
 import java.util.*
+import kotlin.random.Random
 
 fun Route.userRoutes() {
 
@@ -29,15 +32,93 @@ fun Route.userRoutes() {
                 user.password = encryptPassword(user.password)
                 val userAlreadyExists = repository.checkIfUserExists(user.email)
                 if (userAlreadyExists) {
-                    call.respondText(
-                        text = "User already exists",
-                        status = HttpStatusCode.NotAcceptable
+                    call.respond(
+                        HttpStatusCode.NotFound, GlobalResponse<Nothing>(
+                            message = "User already exists",
+                            success = false
+                        )
                     )
                     return@put
                 }
                 user.id = UUID.randomUUID()
 
                 call.respond(HttpStatusCode.OK, repository.insertUser(user))
+            }
+        }
+
+        route("/recover") {
+            route("/send") {
+                put {
+                    val email = call.receive<EmailRequest>()
+                    val userExists = repository.checkIfUserExists(email.email)
+                    if (!userExists) {
+                        call.respond(
+                            HttpStatusCode.NotFound, GlobalResponse<Nothing>(
+                                message = "User doesn't exist.",
+                                success = false
+                            )
+                        )
+                        return@put
+                    }
+
+                    try {
+                        val code = Random.nextLong(10000, 99999)
+
+                        val emailIntent = SimpleEmail().apply {
+                            this.hostName = "smtp.gmail.com"
+                            this.setSmtpPort(465)
+                            this.setAuthenticator(
+                                DefaultAuthenticator(
+                                    "internship.zitec.no.replay@gmail.com",
+                                    "Cristinica123"
+                                )
+                            )
+                            this.isSSLOnConnect = true
+                            this.setFrom("internship.zitec.no.replay@gmail.com")
+                            this.subject = "Password reset confirmation"
+                            this.setMsg("To reset your password, please use the following confirmation code: $code")
+                            this.addTo(email.email)
+                        }
+
+                        emailIntent.send()
+                        repository.updateUserPendingCode(code, email.email)
+                        call.respond(
+                            HttpStatusCode.OK, GlobalResponse<Nothing>(
+                                message = "We delivered your confirmation code on email. Use it to update your password.",
+                                success = true
+                            )
+                        )
+                    } catch (e: Exception) {
+                        call.respond(
+                            HttpStatusCode.InternalServerError, GlobalResponse<Nothing>(
+                                message = e.message,
+                                success = false
+                            )
+                        )
+                    }
+                }
+            }
+            route("/confirm") {
+                put {
+                    val data = call.receive<ForgotPasswordRequest>()
+                    call.validateForgotPasswordConfirmationRequest(
+                        payload = data,
+                        repository = repository
+                    ) {
+                        repository.updateUserPassword(
+                            encryptPassword(
+                                data.password ?: return@validateForgotPasswordConfirmationRequest
+                            ), data.email ?: return@validateForgotPasswordConfirmationRequest
+                        )
+                        repository.updateUserPendingCode(null, data.email)
+                        call.respond(
+                            HttpStatusCode.OK, GlobalResponse<Nothing>(
+                                message = "Account updated, please login again!",
+                                success = true
+                            )
+                        )
+                    }
+                }
             }
         }
 
@@ -153,11 +234,30 @@ fun Route.userRoutes() {
                     try {
                         val result = repository.deleteAddressForUser(userId, UUID.fromString(queryParam))
                         call.respond(HttpStatusCode.OK, result)
-                    } catch (e: Exception){
-                        if( e is IllegalArgumentException){
+                    } catch (e: Exception) {
+                        if (e is IllegalArgumentException) {
                             call.respond(HttpStatusCode.BadRequest, "Id is invalid")
                         }
                     }
+                }
+            }
+        }
+    }
+
+    route("/cards"){
+        authenticate {
+            get {
+                onAuthenticate { call, userId ->
+                    val result = repository.fetchCardsForUser(userId)
+                    call.respond(HttpStatusCode.OK, result)
+                }
+            }
+
+            put {
+                onAuthenticate { call, userId ->
+                    val card = call.receive<Card>()
+                    val result = repository.insertCardForUser(userId, card)
+                    call.respond(HttpStatusCode.OK, result)
                 }
             }
         }

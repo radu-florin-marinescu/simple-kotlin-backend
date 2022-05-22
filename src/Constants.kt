@@ -16,6 +16,12 @@ object Constants {
     const val COLLECTION_NAME_ADDRESSES =
         "addresses"
 
+    const val COLLECTION_NAME_COURIERS =
+        "couriers"
+
+    const val COLLECTION_NAME_CARDS =
+        "cards"
+
     const val JWT_SCOPE = "Authentication"
     const val JWT_EMAIL = "email"
     const val JWT_PASSWORD = "password"

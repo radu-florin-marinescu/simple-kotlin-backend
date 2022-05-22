@@ -1,6 +1,7 @@
 package com.radumarinescu.components
 
 data class Brand(
-    val brandId: String,
+    val id: String,
+    val iconURL: String,
     val name: String
 )

@@ -10,12 +10,13 @@ import com.mongodb.internal.Timeout
 import com.radumarinescu.Constants.DATABASE_URL
 import com.radumarinescu.Constants.JWT_EMAIL
 import com.radumarinescu.components.common.GlobalResponse
+import com.radumarinescu.components.couriers.CourierRepository
+import com.radumarinescu.components.couriers.CourierRepositoryImpl
+import com.radumarinescu.components.couriers.courierRoutes
 import com.radumarinescu.components.dashdoard.DashboardRepository
 import com.radumarinescu.components.dashdoard.DashboardRepositoryImpl
 import com.radumarinescu.components.dashdoard.dashboardRoutes
-import com.radumarinescu.components.users.UserRepository
-import com.radumarinescu.components.users.UserRepositoryImpl
-import com.radumarinescu.components.users.userRoutes
+import com.radumarinescu.components.users.*
 import components.messages.MessageRepository
 import components.messages.MessageRepositoryImpl
 import components.messages.messageRoutes
@@ -31,17 +32,18 @@ import io.ktor.server.engine.*
 import io.ktor.server.jetty.*
 import io.ktor.server.plugins.callloging.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.dataconversion.*
 import io.ktor.server.plugins.dataconversion.DataConversion
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
+import kotlinx.coroutines.runBlocking
 import org.bson.UuidRepresentation
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.koin.java.KoinJavaComponent.inject
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.reactivestreams.KMongo
+import java.util.*
 
 lateinit var secret: String
 lateinit var issuer: String
@@ -55,6 +57,7 @@ fun main(args: Array<String>) {
             single<MessageRepository> { MessageRepositoryImpl() }
             single<UserRepository> { UserRepositoryImpl(get()) }
             single<DashboardRepository> { DashboardRepositoryImpl(get()) }
+            single<CourierRepository> { CourierRepositoryImpl(get()) }
             single {
                 KMongo
                     .createClient(
@@ -75,7 +78,16 @@ fun main(args: Array<String>) {
 fun Application.module() {
     install(DefaultHeaders)
     install(CallLogging)
-    install(DataConversion)
+    install(DataConversion) {
+        convert<CardType> {
+            encode { cardType ->
+                listOf(cardType.name.lowercase(Locale.getDefault()))
+            }
+            decode { list ->
+                CardType.values().firstOrNull { it.name.lowercase(Locale.getDefault()) == (list.firstOrNull()?.lowercase(Locale.getDefault()) ?: "") } ?: CardType.UNDEFINED
+            }
+        }
+    }
     install(ContentNegotiation) {
         jackson {
             enable(SerializationFeature.INDENT_OUTPUT)
@@ -131,8 +143,13 @@ fun Application.module() {
     }
 
     routing {
+        runBlocking {
+            runLaunchScript()
+        }
+
         userRoutes()
         messageRoutes()
         dashboardRoutes()
+        courierRoutes()
     }
 }

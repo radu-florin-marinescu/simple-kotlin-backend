@@ -24,6 +24,10 @@ class UserRepositoryImpl(client: CoroutineClient) : KoinComponent, UserRepositor
         .getDatabase(DB_NAME)
         .getCollection<Address>(Constants.COLLECTION_NAME_ADDRESSES)
 
+    private val cardsCollection = client
+        .getDatabase(DB_NAME)
+        .getCollection<Card>(Constants.COLLECTION_NAME_CARDS)
+
 
     override suspend fun checkIfUserExists(email: String): Boolean =
         withContext(Dispatchers.IO) {
@@ -51,6 +55,34 @@ class UserRepositoryImpl(client: CoroutineClient) : KoinComponent, UserRepositor
                 .findOne(User::id eq uuid)
         }
 
+    override suspend fun updateUserPendingCode(code: Long?, email: String) {
+        withContext(Dispatchers.IO) {
+            userCollection.findOneAndUpdate(
+                User::email eq email,
+                set(
+                    User::pendingConfirmationCode setTo code,
+                )
+            )
+        }
+    }
+
+    override suspend fun updateUserPassword(password: String, email: String) {
+        withContext(Dispatchers.IO) {
+            userCollection.findOneAndUpdate(
+                User::email eq email,
+                set(
+                    User::password setTo password,
+                )
+            )
+        }
+    }
+
+    override suspend fun getUserPendingCode(email: String): Long? =
+        withContext(Dispatchers.IO) {
+            userCollection
+                .findOne(User::email eq email)
+                ?.pendingConfirmationCode
+        }
 
     override suspend fun insertUser(user: User): GlobalResponse<User> =
         withContext(Dispatchers.IO) {
@@ -139,4 +171,32 @@ class UserRepositoryImpl(client: CoroutineClient) : KoinComponent, UserRepositor
             )
         }
 
+    override suspend fun fetchCardsForUser(userId: UUID): GlobalResponse<List<Card>> =
+        withContext(Dispatchers.IO) {
+            val cards = cardsCollection
+                .find(Card::userId eq userId)
+                .toList()
+            GlobalResponse(
+                data = cards.map { card ->
+                    card.userId = null
+                    card
+                },
+                success = true
+            )
+        }
+
+    override suspend fun insertCardForUser(userId: UUID, card: Card): GlobalResponse<Card?> =
+        withContext(Dispatchers.IO) {
+            cardsCollection
+                .insertOne(card.apply {
+                    this.userId = userId
+                    this.id = UUID.randomUUID()
+                })
+                .wasAcknowledged()
+
+            GlobalResponse(
+                data = card,
+                success = true
+            )
+        }
 }

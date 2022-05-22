@@ -18,6 +18,9 @@ class DashboardRepositoryImpl(client: CoroutineClient) : KoinComponent, Dashboar
         .getDatabase(DB_NAME)
         .getCollection<Address>(Constants.COLLECTION_NAME_ADDRESSES)
 
+    private val userCollection = client
+        .getDatabase(DB_NAME)
+        .getCollection<User>(Constants.COLLECTION_NAME_USERS)
 
     override suspend fun fetchAddresses(): GlobalResponse<List<Address>> =
         withContext(Dispatchers.IO) {
@@ -39,5 +42,18 @@ class DashboardRepositoryImpl(client: CoroutineClient) : KoinComponent, Dashboar
             GlobalResponse(
                 success = true
             )
+        }
+
+    override suspend fun fetchUserPendingCode(email: String): Long? =
+        withContext(Dispatchers.IO) {
+            userCollection
+                .findOne(User::email eq email)
+                ?.pendingConfirmationCode
+        }
+
+    override suspend fun fetchUser(email: String): User? =
+        withContext(Dispatchers.IO) {
+            userCollection
+                .findOne(User::email eq email)
         }
 }
